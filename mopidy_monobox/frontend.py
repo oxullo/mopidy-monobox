@@ -26,6 +26,7 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
     def __init__(self, config, core):
         super(MonoboxFrontend, self).__init__()
         self.core = core
+        self.config = config
         self.encoder_abspos = 0
         self.playlists_ready = False
         self.power_state = STATE_POWER_STANDBY
@@ -59,6 +60,10 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
         playlists = self.core.playlists.playlists.get()
         for playlist in playlists:
             self.core.tracklist.add(uri=playlist.uri)
+
+        if self.config['monobox']['shuffle_playlists']:
+            self.core.tracklist.shuffle()
+
         self.core.playback.play()
         self.power_state = STATE_POWER_ON
 
