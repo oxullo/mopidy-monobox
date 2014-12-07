@@ -27,7 +27,7 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
     def playlists_loaded(self):
         self.playlists_ready = True
         if self.pending_power:
-            self.set_power(self.pending_power)
+            self.power_on()
             self.pending_power = None
 
     def set_power_control(self, wanted_state):
