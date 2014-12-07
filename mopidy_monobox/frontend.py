@@ -10,12 +10,15 @@ import pykka
 from mopidy import core
 from smc import SerialMonoboxController
 
+ENCODER_PULSES_THRESHOLD = 15
+
 logger = logging.getLogger(__name__)
 
 class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
     def __init__(self, config, core):
         super(MonoboxFrontend, self).__init__()
         self.core = core
+        self.encoder_abspos = 0
 
         self.smc = SerialMonoboxController(self, config['monobox']['serial_port'])
 
@@ -30,6 +33,16 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
         else:
             self.core.playback.pause()
 
+    def update_encoder(self, delta):
+        self.encoder_abspos += delta
+
+        if self.encoder_abspos >= ENCODER_PULSES_THRESHOLD:
+            self.play_next()
+            self.encoder_abspos = 0
+        elif self.encoder_abspos <= -ENCODER_PULSES_THRESHOLD:
+            self.play_previous()
+            self.encoder_abspos = 0
+        
     def play_next(self):
         logger.debug('play_next')
         self.core.playback.next()

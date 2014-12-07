@@ -6,8 +6,6 @@ import threading
 import logging
 import serial
 
-ENCODER_PULSES_THRESHOLD = 15
-
 logger = logging.getLogger(__name__)
 
 class SerialMonoboxController(threading.Thread):
@@ -15,7 +13,6 @@ class SerialMonoboxController(threading.Thread):
         super(SerialMonoboxController, self).__init__()
         self.s = serial.Serial(serial_port, 115200, timeout=0.5)
         self.frontend = frontend
-        self.encoder_abspos = 0
         self.setDaemon(True)
         self.start()
 
@@ -23,14 +20,7 @@ class SerialMonoboxController(threading.Thread):
         if typ == 'P':
             self.frontend.set_power(value)
         elif typ == 'E':
-            self.encoder_abspos += value
-
-            if self.encoder_abspos >= ENCODER_PULSES_THRESHOLD:
-                self.frontend.play_next()
-                self.encoder_abspos = 0
-            elif self.encoder_abspos <= -ENCODER_PULSES_THRESHOLD:
-                self.frontend.play_previous()
-                self.encoder_abspos = 0
+            self.frontend.update_encoder(value)
 
     def run(self):
         while True:
