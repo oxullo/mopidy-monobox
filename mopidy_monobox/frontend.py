@@ -19,18 +19,37 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
         super(MonoboxFrontend, self).__init__()
         self.core = core
         self.encoder_abspos = 0
+        self.playlists_ready = False
+        self.pending_power = False
 
         self.smc = SerialMonoboxController(self, config['monobox']['serial_port'])
 
-    def set_power(self, state):
-        logger.debug('set_power state=%d' % state)
-        if state == 1:
-            self.core.tracklist.clear()
-            playlists = self.core.playlists.playlists.get()
-            for playlist in playlists:
-                self.core.tracklist.add(uri=playlist.uri)
-            self.core.playback.play()
+    def playlists_loaded(self):
+        self.playlists_ready = True
+        if self.pending_power:
+            self.set_power(self.pending_power)
+            self.pending_power = None
+
+    def set_power_control(self, wanted_state):
+        logger.info('set_power_control wanted_state=%d' % wanted_state)
+        if wanted_state == 1:
+            if self.playlists_ready:
+                self.power_on()
+            else:
+                logger.debug('Delaying power on')
+                self.pending_power = True
         else:
+            self.standby()
+
+    def power_on(self):
+        self.core.tracklist.clear()
+        playlists = self.core.playlists.playlists.get()
+        for playlist in playlists:
+            self.core.tracklist.add(uri=playlist.uri)
+        self.core.playback.play()
+
+    def standby(self):
+        if self.core.playback.state.get() == core.PlaybackState.PLAYING:
             self.core.playback.pause()
 
     def update_encoder(self, delta):

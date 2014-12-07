@@ -18,7 +18,7 @@ class SerialMonoboxController(threading.Thread):
 
     def process(self, typ, value):
         if typ == 'P':
-            self.frontend.set_power(value)
+            self.frontend.set_power_control(value)
         elif typ == 'E':
             self.frontend.update_encoder(value)
 
