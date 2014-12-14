@@ -56,10 +56,19 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
     def power_on(self):
         self.core.tracklist.clear()
         playlists = self.core.playlists.playlists.get()
-        for playlist in playlists:
-            self.core.tracklist.add(uri=playlist.uri)
 
-        if self.config['monobox']['shuffle_playlists']:
+        wanted_playlists = self.config['monobox']['only_playlists']
+        for playlist in playlists:
+            if ((wanted_playlists and playlist.name in wanted_playlists) or
+                    not wanted_playlists):
+                logger.info('Adding playlist %s' % playlist.name)
+                self.core.tracklist.add(uri=playlist.uri)
+            else:
+                logger.info('Skipping playlist %s' % playlist.name)
+
+        logger.info('Loaded %d tracks' % self.core.tracklist.length.get())
+        if self.config['monobox']['shuffle']:
+            logger.info('Shuffling')
             self.core.tracklist.shuffle()
 
         self.core.playback.play()
