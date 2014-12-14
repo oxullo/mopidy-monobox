@@ -35,6 +35,8 @@ class Extension(ext.Extension):
         schema = super(Extension, self).get_config_schema()
         schema['serial_port'] = config.String()
         schema['shuffle_playlists'] = config.Boolean()
+        schema['cue_feature'] = config.Boolean()
+        schema['pulses_trigger'] = config.Integer()
         return schema
 
     def setup(self, registry):

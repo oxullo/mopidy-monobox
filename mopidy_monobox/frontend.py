@@ -10,8 +10,6 @@ import pykka
 from mopidy import core
 from smc import SerialMonoboxController
 
-ENCODER_PULSES_THRESHOLD = 30
-
 STATE_POWER_STANDBY = 'STATE_POWER_STANDBY'
 STATE_POWER_ON = 'STATE_POWER_ON'
 STATE_POWER_PENDING_ON = 'STATE_POWER_PENDING_ON'
@@ -77,28 +75,40 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
                 self.core.playback.state.get() != core.PlaybackState.PLAYING):
             return
 
-        self.recalculate_encoder_position()
-
-        self.encoder_abspos += delta
-
-        if self.encoder_abspos >= ENCODER_PULSES_THRESHOLD:
-            self.play_next()
-            self.encoder_abspos = 0
-        elif self.encoder_abspos <= -ENCODER_PULSES_THRESHOLD:
-            self.play_previous()
-            self.encoder_abspos = 0
-        elif (self.encoder_abspos >= 0 and
-                self.core.playback.state.get() == core.PlaybackState.PLAYING):
-            norm_pos = float(self.encoder_abspos) / ENCODER_PULSES_THRESHOLD
-            current_track = self.core.playback.current_track.get()
-            seek_ms = int(current_track.length * norm_pos)
-            self.core.playback.seek(seek_ms)
+        if self.config['monobox']['cue_feature']:
+            self.cue(delta)
+        else:
+            self.encoder_abspos += delta
+            if self.encoder_abspos > self.config['monobox']['pulses_trigger']:
+                self.encoder_abspos = 0
+                self.play_next()
+            elif self.encoder_abspos < -self.config['monobox']['pulses_trigger']:
+                self.encoder_abspos = 0
+                self.play_previous()
 
     def recalculate_encoder_position(self):
         current_track = self.core.playback.current_track.get()
         norm_pos = float(self.core.playback.time_position.get()) / current_track.length
-        new_encoder_pos = int(ENCODER_PULSES_THRESHOLD * norm_pos)
+        new_encoder_pos = int(self.config['monobox']['pulses_trigger'] * norm_pos)
         self.encoder_abspos = new_encoder_pos
+
+    def cue(self, delta):
+        self.recalculate_encoder_position()
+
+        self.encoder_abspos += delta
+
+        if self.encoder_abspos >= self.config['monobox']['pulses_trigger']:
+            self.play_next()
+            self.encoder_abspos = 0
+        elif self.encoder_abspos <= -self.config['monobox']['pulses_trigger']:
+            self.play_previous()
+            self.encoder_abspos = 0
+        elif (self.encoder_abspos >= 0 and
+                self.core.playback.state.get() == core.PlaybackState.PLAYING):
+            norm_pos = float(self.encoder_abspos) / self.config['monobox']['pulses_trigger']
+            current_track = self.core.playback.current_track.get()
+            seek_ms = int(current_track.length * norm_pos)
+            self.core.playback.seek(seek_ms)
 
     def play_next(self):
         logger.debug('play_next')
