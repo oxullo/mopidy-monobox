@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class SerialMonoboxController(pykka.ThreadingActor):
-    def __init__(self, frontend, serial_port):
+    def __init__(self, frontend, serial_port, serial_bps):
         super(SerialMonoboxController, self).__init__()
-        self.s = serial.Serial(serial_port, 115200)
+        self.s = serial.Serial(serial_port, serial_bps)
         self.s.nonblocking()
         self.frontend = frontend
         self.buffer = ''
