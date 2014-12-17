@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 import re
 import threading
 import logging
 import serial
 
 logger = logging.getLogger(__name__)
+
 
 class SerialMonoboxController(threading.Thread):
     def __init__(self, frontend, serial_port):
