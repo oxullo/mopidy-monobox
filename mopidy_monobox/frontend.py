@@ -80,6 +80,7 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
         self.power_state = STATE_POWER_ON
 
     def standby(self):
+        self.power_state = STATE_POWER_STANDBY
         if self.core.playback.state.get() == core.PlaybackState.PLAYING:
             self.track_state = STATE_TRACK_PLAYBACK_IDLE
             self.core.playback.pause()
