@@ -30,7 +30,10 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
         self.power_state = STATE_POWER_STANDBY
         self.track_state = STATE_TRACK_PLAYBACK_IDLE
 
-        self.smc = SerialMonoboxController(self, config['monobox']['serial_port'])
+        self.smc = SerialMonoboxController.start(self, config['monobox']['serial_port'])
+
+    def on_stop(self):
+        self.smc.stop()
 
     def playlists_loaded(self):
         self.playlists_ready = True
