@@ -9,13 +9,21 @@ import serial
 import gobject
 import pykka
 
+from mopidy import exceptions
+from mopidy.utils import encoding
+
 logger = logging.getLogger(__name__)
 
 
 class SerialMonoboxController(pykka.ThreadingActor):
     def __init__(self, frontend, serial_port, serial_bps):
         super(SerialMonoboxController, self).__init__()
-        self.s = serial.Serial(serial_port, serial_bps)
+        try:
+            self.s = serial.Serial(serial_port, serial_bps)
+        except Exception as error:
+            raise exceptions.FrontendError('SMC serial connection failed: %s' %
+                    encoding.locale_decode(error))
+
         self.s.nonblocking()
         self.frontend = frontend
         self.buffer = ''
