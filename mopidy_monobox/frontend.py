@@ -47,6 +47,9 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener):
         self.encoder_abspos = 0
         self.track_state = STATE_TRACK_PLAYBACK_PLAYING
 
+    def set_volume(self, volume):
+        self.core.playback.set_volume(volume)
+
     def set_power_control(self, wanted_state):
         logger.info('set_power_control wanted_state=%d' % wanted_state)
         if wanted_state == 1:

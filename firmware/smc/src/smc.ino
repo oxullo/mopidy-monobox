@@ -15,7 +15,6 @@ ClickEncoder *encoder;
 ClickEncoder::Button lastBtnState = encoder->getButton();
 
 Bounce bouncer = Bounce(POW_SWITCH, 20); 
-int lastPowState = -1;
 
 
 void timerIsr()
@@ -25,7 +24,8 @@ void timerIsr()
 
 void checkPowerState()
 {
-    int state;
+    static int8_t lastPowState = -1;
+    int8_t state;
 
     bouncer.update();
     state = bouncer.read();
@@ -34,6 +34,30 @@ void checkPowerState()
         Serial.println(!state);
     }
     lastPowState = state;
+}
+
+uint16_t getPotValue()
+{
+    uint16_t sum = 0;
+
+    for (uint8_t i = 0 ; i < 5 ; ++i) {
+        sum += analogRead(POT_IN);
+        delay(1);
+    }
+
+    return sum / 5;
+}
+
+void checkPot()
+{
+    static int lastLevel = -1;
+    int currentLevel = constrain(map(getPotValue(), 0, 1023, 0, 100), 0, 100);
+
+    if (lastLevel != currentLevel) {
+        Serial.print("V:");
+        Serial.println(currentLevel);
+        lastLevel = currentLevel;
+    }
 }
 
 void setup()
@@ -66,4 +90,5 @@ void loop()
     lastBtnState = b;
 
     checkPowerState();
+    checkPot();
 }

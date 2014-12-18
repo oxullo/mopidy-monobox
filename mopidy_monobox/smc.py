@@ -39,10 +39,12 @@ class SerialMonoboxController(pykka.ThreadingActor):
             self.frontend.set_power_control(value)
         elif typ == 'E':
             self.frontend.update_encoder(value)
+        elif typ == 'V':
+            self.frontend.set_volume(value)
 
     def process_line(self, line):
         logger.debug('SMC process line: %s' % line)
-        res = re.search(r'^([EBP]):(\-?\d+)$', line)
+        res = re.search(r'^([EBPV]):(\-?\d+)$', line)
         if res:
             typ, value = res.groups()
             try:
