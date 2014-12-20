@@ -7,14 +7,18 @@
 #define LIKE_BUT    7
 #define POT_IN      A0
 
-#include <ClickEncoder.h>
 #include <TimerOne.h>
-#include <Bounce.h>
+
+// Third party libraries
+// ClickEncoder https://github.com/0xPIT/encoder
+#include <ClickEncoder.h>
+// Bounce2 https://github.com/thomasfredericks/Bounce-Arduino-Wiring/
+#include <Bounce2.h>
 
 ClickEncoder *encoder;
 ClickEncoder::Button lastBtnState = encoder->getButton();
 
-Bounce bouncer = Bounce(POW_SWITCH, 20); 
+Bounce bouncer = Bounce(); 
 
 
 void timerIsr()
@@ -71,6 +75,8 @@ void setup()
     encoder->setAccelerationEnabled(true);
 
     pinMode(POW_SWITCH, INPUT_PULLUP);
+    bouncer.attach(POW_SWITCH);
+    bouncer.interval(10);
 }
 
 void loop()
