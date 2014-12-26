@@ -25,7 +25,7 @@ class SerialMonoboxController(pykka.ThreadingActor):
                     encoding.locale_decode(error))
 
         self.s.nonblocking()
-        self.frontend = frontend
+        self.frontend_proxy = frontend.actor_ref.proxy()
         self.buffer = ''
 
     def on_start(self):
@@ -36,11 +36,11 @@ class SerialMonoboxController(pykka.ThreadingActor):
 
     def process_parsed(self, typ, value):
         if typ == 'P':
-            self.frontend.set_power_control(value)
+            self.frontend_proxy.set_power_control(value)
         elif typ == 'E':
-            self.frontend.update_encoder(value)
+            self.frontend_proxy.update_encoder(value)
         elif typ == 'V':
-            self.frontend.set_volume(value)
+            self.frontend_proxy.set_volume(value)
 
     def process_line(self, line):
         logger.debug('SMC process line: %s' % line)
