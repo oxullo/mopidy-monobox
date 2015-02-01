@@ -39,7 +39,7 @@ class SerialMonoboxController(pykka.ThreadingActor):
         self.running = True
         while self.running:
             ch = self.s.read()
-            if ch != '\r':
+            if ch not in ('', '\r'):
                 self.buffer += ch
 
             # logger.debug('SMC buf: %s' % str([c for c in self.buffer]))
