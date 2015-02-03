@@ -8,7 +8,8 @@ import serial
 import pykka
 
 from mopidy import core, audio
-from smc import SerialMonoboxController
+import smc
+import feedbackplayer
 
 STATE_POWER_STANDBY = 'STATE_POWER_STANDBY'
 STATE_POWER_ON = 'STATE_POWER_ON'
@@ -17,6 +18,8 @@ STATE_POWER_PENDING_ON = 'STATE_POWER_PENDING_ON'
 STATE_TRACK_PLAYBACK_IDLE = 'STATE_TRACK_PLAYBACK_IDLE'
 STATE_TRACK_PLAYBACK_PENDING = 'STATE_TRACK_PLAYBACK_PENDING'
 STATE_TRACK_PLAYBACK_PLAYING = 'STATE_TRACK_PLAYBACK_PLAYING'
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,16 +32,27 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener, audio.AudioListen
         self.power_state = STATE_POWER_STANDBY
         self.track_state = STATE_TRACK_PLAYBACK_IDLE
 
-        self.smc = SerialMonoboxController.start(self,
+        self.smc = smc.SerialMonoboxController.start(self,
                 config['monobox']['serial_port'],
                 config['monobox']['serial_bps'])
-
+    
+        self.feedbacks = {
+                'poweron': feedbackplayer.FeedbackPlayer('fav_set.wav'),
+                'click': feedbackplayer.FeedbackPlayer('click.wav'),
+                'error': feedbackplayer.FeedbackPlayer('error.wav'),
+                'next': feedbackplayer.FeedbackPlayer('next.wav'),
+        }
         self.browse_radios()
-
+    
     def on_stop(self):
         self.smc.stop()
 
     def state_changed(self, old_state, new_state, target_state):
+        if old_state == 'stopped' and new_state == 'paused' and target_state == 'playing':
+            self.feedbacks['next'].play(loop=True)
+        elif old_state == 'paused' and new_state == 'playing':
+            self.feedbacks['next'].fadeout()
+
         print 'AUDIO STATE:', old_state, new_state, target_state
 
     def track_playback_started(self, tl_track):
@@ -57,6 +71,7 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener, audio.AudioListen
             self.power_on()
 
     def set_volume(self, volume):
+        return
         self.core.playback.set_volume(volume)
 
     def set_power_control(self, wanted_state):
@@ -71,6 +86,7 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener, audio.AudioListen
             self.standby()
 
     def power_on(self):
+        self.feedbacks['poweron'].play()
         self.core.playback.play()
         self.power_state = STATE_POWER_ON
 
@@ -93,7 +109,9 @@ class MonoboxFrontend(pykka.ThreadingActor, core.CoreListener, audio.AudioListen
     def next_button_pressed(self):
         if (self.track_state == STATE_TRACK_PLAYBACK_PENDING or
                 self.core.playback.state.get() != core.PlaybackState.PLAYING):
+            self.feedbacks['error'].play()
             logger.warning('Skipping next button request')
             return
         else:
+            self.feedbacks['click'].play()
             self.play_next()
